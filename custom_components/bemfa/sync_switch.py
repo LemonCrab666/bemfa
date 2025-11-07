@@ -28,7 +28,6 @@ from homeassistant.const import (
     SERVICE_TURN_ON,
     SERVICE_UNLOCK,
     SERVICE_LOCK,
-    STATE_LOCKED,
     STATE_ON,
     STATE_PLAYING,
 )
@@ -130,7 +129,7 @@ class Lock(Switch):
     def _msg_generator(
         self,
     ) -> Callable[[str, ReadOnlyDict[Mapping[str, Any]]], str | int]:
-        return lambda state, attributes: MSG_OFF if state == STATE_LOCKED else MSG_ON
+        return lambda state, attributes: MSG_OFF if state == "locked" else MSG_ON
     def _service_names(self) -> tuple[str, str]:
         return (SERVICE_UNLOCK, SERVICE_LOCK)
 
