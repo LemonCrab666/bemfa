@@ -1,10 +1,9 @@
 """Support for bemfa service."""
 from __future__ import annotations
-
 from collections.abc import Mapping, Callable
 from typing import Any
 from homeassistant.components.automation import DOMAIN as AUTOMATION_DOMAIN
-from homeassistant.components.camera import DOMAIN as CAMERA_DOMAIN, STATE_IDLE
+from homeassistant.components.camera import DOMAIN as CAMERA_DOMAIN
 from homeassistant.components.group import DOMAIN as GROUP_DOMAIN
 from homeassistant.components.humidifier import DOMAIN as HUMIDIFIER_DOMAIN
 from homeassistant.components.input_boolean import DOMAIN as INPUT_BOOLEAN_DOMAIN
@@ -38,19 +37,16 @@ from homeassistant.util.read_only_dict import ReadOnlyDict
 from .const import MSG_OFF, MSG_ON, TopicSuffix
 from .sync import SYNC_TYPES, ControllableSync
 
-
+# 移除 STATE_IDLE 导入，使用字符串 "idle" 替代
 @SYNC_TYPES.register("switch")
 class Switch(ControllableSync):
     """Many domains which bemfa do not support need to be converted to switch."""
-
     @staticmethod
     def get_config_step_id() -> str:
         return "sync_config_switch"
-
     @staticmethod
     def _get_topic_suffix() -> TopicSuffix:
         return TopicSuffix.SWITCH
-
     @staticmethod
     def _supported_domain() -> list[str]:
         return [
@@ -62,12 +58,10 @@ class Switch(ControllableSync):
             REMOTE_DOMAIN,
             SIREN_DOMAIN,
         ]
-
     def _msg_generators(
         self,
     ) -> list[Callable[[str, ReadOnlyDict[Mapping[str, Any]]], str | int]]:
         return [self._msg_generator()]
-
     def _msg_resolvers(
         self,
     ) -> list[
@@ -83,9 +77,9 @@ class Switch(ControllableSync):
         return [
             (
                 # split bemfa msg by "#", then take a sub list
-                0,  # from this index
-                1,  # to this index
-                lambda msg, attributes: (  # and pass to this fun as param "msg"
+                0, # from this index
+                1, # to this index
+                lambda msg, attributes: ( # and pass to this fun as param "msg"
                     self._service_domain(),
                     self._service_names()[0]
                     if msg[0] == MSG_ON
@@ -94,100 +88,78 @@ class Switch(ControllableSync):
                 ),
             )
         ]
-
     def _msg_generator(
         self,
     ) -> Callable[[str, ReadOnlyDict[Mapping[str, Any]]], str | int]:
         return lambda state, attributes: MSG_ON if state == STATE_ON else MSG_OFF
-
     def _service_domain(self) -> str:
         """Domain of service calls."""
         return self._entity_id.split(".")[0]
-
     def _service_names(self) -> tuple[str, str]:
         """On/off services to call."""
         return (SERVICE_TURN_ON, SERVICE_TURN_OFF)
 
-
 @SYNC_TYPES.register("camera")
 class Camera(Switch):
     """Sync a hass camera entity to bemfa switch device."""
-
     @staticmethod
     def _supported_domain() -> str:
         return CAMERA_DOMAIN
-
     def _msg_generator(
         self,
     ) -> Callable[[str, ReadOnlyDict[Mapping[str, Any]]], str | int]:
-        return lambda state, attributes: MSG_OFF if state == STATE_IDLE else MSG_ON
-
+        return lambda state, attributes: MSG_OFF if state == "idle" else MSG_ON
 
 @SYNC_TYPES.register("media_player")
 class MediaPlayer(Switch):
     """Sync a hass media player entity to bemfa switch device."""
-
     @staticmethod
     def _supported_domain() -> str:
         return MEDIA_PLAYER_DOMAIN
-
     def _msg_generator(
         self,
     ) -> Callable[[str, ReadOnlyDict[Mapping[str, Any]]], str | int]:
         return lambda state, attributes: MSG_ON if state == STATE_PLAYING else MSG_OFF
 
-
 @SYNC_TYPES.register("lock")
 class Lock(Switch):
     """Sync a hass lock entity to bemfa switch device."""
-
     @staticmethod
     def _supported_domain() -> str:
         return LOCK_DOMAIN
-
     def _msg_generator(
         self,
     ) -> Callable[[str, ReadOnlyDict[Mapping[str, Any]]], str | int]:
         return lambda state, attributes: MSG_OFF if state == STATE_LOCKED else MSG_ON
-
     def _service_names(self) -> tuple[str, str]:
         return (SERVICE_UNLOCK, SERVICE_LOCK)
-
 
 @SYNC_TYPES.register("scene")
 class Scene(Switch):
     """Treat state of SCENE as always OFF to triggle it at any time."""
-
     @staticmethod
     def _supported_domain() -> str:
         return SCENE_DOMAIN
-
     def _msg_generator(
         self,
     ) -> Callable[[str, ReadOnlyDict[Mapping[str, Any]]], str | int]:
         return lambda state, attributes: MSG_OFF
 
-
 @SYNC_TYPES.register("group")
 class Group(Switch):
     """Service domain for old style GROUP is homeassistant."""
-
     @staticmethod
     def _supported_domain() -> str:
         return GROUP_DOMAIN
-
     def _service_domain(self) -> str:
         return HOMEASSISTANT_DOMAIN
-
 
 @SYNC_TYPES.register("vacuum")
 class Vacuum(Switch):
     """Sync a hass vacuum entity to bemfa switch device."""
-
     @staticmethod
     def _supported_domain() -> str:
         return VACUUM_DOMAIN
-
     def _msg_generator(
         self,
     ) -> Callable[[str, ReadOnlyDict[Mapping[str, Any]]], str | int]:
@@ -196,7 +168,6 @@ class Vacuum(Switch):
             if state in [STATE_ON, STATE_CLEANING]
             else MSG_OFF
         )
-
     def _msg_resolvers(
         self,
     ) -> list[
